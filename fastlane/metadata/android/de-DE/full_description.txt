@@ -1,0 +1,24 @@
+<p>Mit <b>StarSwipe</b> gehst du eine große Fotosammlung durch und gibst jedem Bild 1 bis 5 Sterne – schnell, Foto für Foto, direkt auf dem Handy.</p>
+<p>Die Bewertung wird als <i>xmp:Rating</i> in eine Begleitdatei (<i>Foto.jpg.xmp</i>) neben dem Foto geschrieben. Die Originale bleiben unverändert. darktable, digiKam und andere Programme lesen diese Bewertungen direkt.</p>
+<p><b>Wo deine Fotos liegen können</b></p>
+<ul>
+<li>Nextcloud (Anmeldung über den Browser, nutzt die Vorschaubilder des Servers)</li>
+<li>WebDAV</li>
+<li>Windows-/Samba-Freigaben (SMB 2/3), z. B. ein NAS</li>
+<li>Ordner auf dem Handy</li>
+</ul>
+<p><b>So bewertest du</b></p>
+<ul>
+<li>Sterne-Leiste: 1–5 Sterne antippen, links/rechts wischen blättert</li>
+<li>Wisch-Modus: jede Wischrichtung vergibt eine frei gewählte Sternzahl, dazu ein Knopf mit eigener Sternzahl</li>
+<li>Rückgängig, Überspringen, bewertete Fotos ausblenden, 1 ★ als unbewertet behandeln</li>
+</ul>
+<p><b>Außerdem</b></p>
+<ul>
+<li>Offline vergebene Bewertungen werden später automatisch geschrieben</li>
+<li>Das Einlesen der Ordner läuft im Hintergrund weiter</li>
+<li>Deutsch, Englisch und Spanisch</li>
+<li>Keine Werbung, kein Tracking, kein Konto bei uns – die App spricht nur mit deinem eigenen Speicher</li>
+</ul>
+<p>Passwörter werden mit dem Android-Keystore verschlüsselt gespeichert. Unverschlüsseltes HTTP ist nur für Adressen im Heimnetz erlaubt.</p>
+<p>Die App wurde maßgeblich mit Hilfe von KI entwickelt (Claude von Anthropic).</p>

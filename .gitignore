@@ -1,0 +1,11 @@
+.superpowers/
+local.properties
+.gradle/
+build/
+*/build/
+.idea/
+*.iml
+dist/
+
+# Bau-Notizen mit Details zum Heimnetz bleiben lokal
+docs/superpowers/

@@ -1,0 +1,6 @@
+First public release.
+• New package name and app icon
+• Configurable star value for the button in swipe mode
+• Reading folders continues in the background with a progress notification
+• Path and file name shown below the photo
+• English, German and Spanish

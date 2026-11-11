@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- StarSwipe: goldener Stern mit Wischspuren (Vordergrund des adaptiven Symbols, 108 dp, sichtbarer Kreis ≈ 66 dp) -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp" android:height="108dp" android:viewportWidth="108" android:viewportHeight="108">
+    <path android:fillColor="#000000" android:strokeColor="#000000" android:strokeWidth="3" android:strokeLineJoin="round"
+        android:pathData="M61.00,32.00 L66.58,47.31 L82.87,47.89 L70.04,57.94 L74.52,73.61 L61.00,64.50 L47.48,73.61 L51.96,57.94 L39.13,47.89 L55.42,47.31 Z" />
+    <path android:strokeColor="#000000" android:strokeWidth="4.5" android:strokeLineCap="round" android:strokeAlpha="0.55"
+        android:pathData="M24,45 L36,45" />
+    <path android:strokeColor="#000000" android:strokeWidth="4.5" android:strokeLineCap="round" android:strokeAlpha="0.85"
+        android:pathData="M20,55 L34,55" />
+    <path android:strokeColor="#000000" android:strokeWidth="4.5" android:strokeLineCap="round" android:strokeAlpha="0.55"
+        android:pathData="M26,65 L37,65" />
+</vector>

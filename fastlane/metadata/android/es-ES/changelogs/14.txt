@@ -1,0 +1,6 @@
+Primera versión pública.
+• Nuevo nombre de paquete e icono propio
+• Valor de estrellas configurable para el botón en modo deslizar
+• La lectura de carpetas continúa en segundo plano con aviso de progreso
+• Ruta y nombre de archivo bajo la foto
+• Inglés, alemán y español

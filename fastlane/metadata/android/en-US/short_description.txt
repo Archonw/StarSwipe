@@ -1,0 +1,1 @@
+Rate your photos with stars by swiping – stored as XMP sidecars next to them

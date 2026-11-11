@@ -1,0 +1,24 @@
+<p>Con <b>StarSwipe</b> recorres una colección grande de fotos y das a cada imagen de 1 a 5 estrellas – rápido, foto a foto, directamente en el móvil.</p>
+<p>La valoración se escribe como <i>xmp:Rating</i> en un archivo adjunto (<i>foto.jpg.xmp</i>) junto a la foto. Los originales nunca se modifican. darktable, digiKam y otros programas leen estas valoraciones directamente.</p>
+<p><b>Dónde pueden estar tus fotos</b></p>
+<ul>
+<li>Nextcloud (inicio de sesión en el navegador, usa las vistas previas del servidor)</li>
+<li>WebDAV</li>
+<li>Carpetas compartidas de Windows/Samba (SMB 2/3), p. ej. un NAS</li>
+<li>Carpetas del móvil</li>
+</ul>
+<p><b>Cómo valoras</b></p>
+<ul>
+<li>Barra de estrellas: toca 1–5 estrellas, desliza a izquierda/derecha para avanzar</li>
+<li>Modo deslizar: cada dirección da el número de estrellas que elijas, más un botón con su propio valor</li>
+<li>Deshacer, saltar, ocultar fotos valoradas, tratar 1 ★ como sin valorar</li>
+</ul>
+<p><b>Además</b></p>
+<ul>
+<li>Las valoraciones hechas sin conexión se escriben después automáticamente</li>
+<li>La lectura de carpetas continúa en segundo plano</li>
+<li>Inglés, alemán y español</li>
+<li>Sin anuncios, sin rastreo, sin cuenta con nosotros – la app solo habla con tu propio almacenamiento</li>
+</ul>
+<p>Las contraseñas se guardan cifradas con el Android Keystore. HTTP sin cifrar solo se permite para direcciones de la red doméstica.</p>
+<p>Esta app se desarrolló en gran parte con ayuda de IA (Claude de Anthropic).</p>

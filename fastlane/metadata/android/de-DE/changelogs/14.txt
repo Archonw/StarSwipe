@@ -1,0 +1,6 @@
+Erste öffentliche Version.
+• Neuer Paketname und eigenes App-Symbol
+• Knopf im Wisch-Modus mit einstellbarer Sternzahl
+• Einlesen läuft im Hintergrund weiter, mit Fortschritt in der Benachrichtigung
+• Pfad und Dateiname unter dem Foto
+• Deutsch, Englisch und Spanisch

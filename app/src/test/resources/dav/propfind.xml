@@ -1,0 +1,21 @@
+<?xml version="1.0"?>
+<d:multistatus xmlns:d="DAV:" xmlns:s="http://sabredav.org/ns" xmlns:oc="http://owncloud.org/ns" xmlns:nc="http://nextcloud.org/ns">
+ <d:response>
+  <d:href>/remote.php/dav/files/jan/Foto%20Upload/</d:href>
+  <d:propstat><d:prop><d:getlastmodified>Mon, 10 Nov 2026 18:16:00 GMT</d:getlastmodified><d:resourcetype><d:collection/></d:resourcetype><d:getetag>"dir1"</d:getetag><oc:fileid>100</oc:fileid></d:prop><d:status>HTTP/1.1 200 OK</d:status></d:propstat>
+ </d:response>
+ <d:response>
+  <d:href>/remote.php/dav/files/jan/Foto%20Upload/Unter/</d:href>
+  <d:propstat><d:prop><d:getlastmodified>Mon, 10 Nov 2026 18:16:00 GMT</d:getlastmodified><d:resourcetype><d:collection/></d:resourcetype><d:getetag>"dir2"</d:getetag><oc:fileid>101</oc:fileid></d:prop><d:status>HTTP/1.1 200 OK</d:status></d:propstat>
+  <d:propstat><d:prop><d:getcontentlength/><d:getcontenttype/></d:prop><d:status>HTTP/1.1 404 Not Found</d:status></d:propstat>
+ </d:response>
+ <d:response>
+  <d:href>/remote.php/dav/files/jan/Foto%20Upload/B%c3%a4ume%20%231.jpg</d:href>
+  <d:propstat><d:prop><d:getlastmodified>Fri, 30 Mar 2018 14:32:44 GMT</d:getlastmodified><d:getcontentlength>2867311</d:getcontentlength><d:resourcetype/><d:getetag>"abc123"</d:getetag><d:getcontenttype>image/jpeg</d:getcontenttype><oc:fileid>4711</oc:fileid><nc:metadata-photos-original_date_time>1522420364</nc:metadata-photos-original_date_time></d:prop><d:status>HTTP/1.1 200 OK</d:status></d:propstat>
+ </d:response>
+ <d:response>
+  <d:href>/remote.php/dav/files/jan/Foto%20Upload/B%c3%a4ume%20%231.jpg.xmp</d:href>
+  <d:propstat><d:prop><d:getlastmodified>Fri, 30 Mar 2018 14:40:00 GMT</d:getlastmodified><d:getcontentlength>1051</d:getcontentlength><d:resourcetype/><d:getetag>"x1"</d:getetag><d:getcontenttype>application/octet-stream</d:getcontenttype><oc:fileid>4712</oc:fileid></d:prop><d:status>HTTP/1.1 200 OK</d:status></d:propstat>
+  <d:propstat><d:prop><nc:metadata-photos-original_date_time/></d:prop><d:status>HTTP/1.1 404 Not Found</d:status></d:propstat>
+ </d:response>
+</d:multistatus>
