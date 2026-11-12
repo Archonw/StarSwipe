@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -90,6 +91,14 @@ fun SettingsScreen(onStorages: () -> Unit, onBack: () -> Unit, onAbout: () -> Un
             StarsChooser(stringResource(R.string.swipe_button), ui.buttonStars) { n -> scope.launch { c.settings.setButtonStars(n) } }
             HorizontalDivider()
             Text(stringResource(R.string.storages_header), style = MaterialTheme.typography.titleMedium)
+            Row(Modifier.fillMaxWidth().toggleable(value = ui.autoScan, role = Role.Switch,
+                onValueChange = { on -> scope.launch { c.settings.setAutoScan(on) } }), verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) {
+                    Text(stringResource(R.string.auto_scan))
+                    Text(stringResource(R.string.auto_scan_hint), style = MaterialTheme.typography.bodySmall)
+                }
+                androidx.compose.material3.Switch(checked = ui.autoScan, onCheckedChange = null)
+            }
             Text(stringResource(R.string.settings_storages_hint), style = MaterialTheme.typography.bodySmall)
             Button(onClick = onStorages) { Text(stringResource(R.string.to_home)) }
             HorizontalDivider()

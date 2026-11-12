@@ -1,0 +1,1 @@
+• Neue Einstellung „Beim Öffnen automatisch einlesen“: Ausgeschaltet geht das Bewerten sofort mit dem gespeicherten Stand weiter, auch nach einem Neustart – praktisch bei sehr großen Ordnern

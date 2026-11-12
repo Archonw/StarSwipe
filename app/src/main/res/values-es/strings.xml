@@ -83,6 +83,8 @@
     <string name="dir_right">Derecha →</string>
     <string name="dir_left">Izquierda ←</string>
     <string name="dir_down">Abajo ↓</string>
+    <string name="auto_scan">Leer carpetas automáticamente al abrir</string>
+    <string name="auto_scan_hint">Desactivado: la valoración continúa al momento con el estado guardado, incluso tras reiniciar la app; útil con carpetas muy grandes. Las ubicaciones nuevas y las carpetas cambiadas se leen igualmente; el botón ↻ lee en cualquier momento.</string>
     <string name="swipe_button">Botón bajo la foto</string>
     <string name="settings_storages_hint">Añadir, elegir carpetas, activar, «1 ★ como sin valorar», quitar: en la pantalla de inicio.</string>
     <string name="to_home">Ir a la pantalla de inicio</string>

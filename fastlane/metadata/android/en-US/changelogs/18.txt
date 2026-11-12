@@ -1,0 +1,1 @@
+• New setting "Read folders automatically when opening": switched off, rating continues right away with the stored state, even after restarting the app – useful for very large folders

@@ -11,6 +11,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -37,7 +38,9 @@ class RateViewModel(private val c: AppContainer, only: Long? = null) : ViewModel
         viewModelScope.launch {
             core.load()
             // Einlesen im App-Bereich: läuft weiter, wenn der Bildschirm kurz verlassen wird (Einstellungen o. Ä.).
-            c.scope.launch { core.refresh(maxAgeMs = REUSE_SCAN_MS) }
+            c.scope.launch {
+                if (c.settings.ui.first().autoScan) core.refresh(maxAgeMs = REUSE_SCAN_MS) else core.refresh(skipIfCached = true)
+            }
         }
         viewModelScope.launch { core.watch() }
     }

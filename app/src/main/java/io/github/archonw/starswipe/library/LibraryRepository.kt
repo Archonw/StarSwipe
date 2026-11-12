@@ -64,6 +64,7 @@ class LibraryRepository(
      * noch einmal einlesen; mehrere solche Anfragen teilen sich einen Folge-Durchgang.
      * [maxAgeMs]: wurden alle betroffenen Speicherorte vor höchstens so langer Zeit fehlerfrei eingelesen,
      * entfällt das Einlesen (erneutes Öffnen des Bewertens); null = immer einlesen.
+     * [skipIfCached]: nur Speicherorte einlesen, von denen noch nichts gespeichert ist (automatisches Einlesen aus).
      * Ergebnis: Fehler je Speicherort-ID. [onBatch] läuft nach jedem gespeicherten Ordner.
      */
     suspend fun refreshAll(
@@ -73,8 +74,15 @@ class LibraryRepository(
         only: Long? = null,
         rescan: Boolean = false,
         maxAgeMs: Long? = null,
+        skipIfCached: Boolean = false,
     ): Map<Long, StorageException> {
         if (maxAgeMs != null && !rescan && isFresh(only, maxAgeMs)) return emptyMap()
+        if (skipIfCached && !rescan) {
+            val missing = inScope(only).filter { db.photos().countFor(it) == 0 }
+            if (missing.isEmpty()) return emptyMap()
+            // Nur die noch leeren Speicherorte einlesen – große, schon eingelesene bleiben unberührt.
+            if (only == null) return buildMap { for (id in missing) putAll(refreshAll(onBatch, onProgress, onFound, id)) }
+        }
         _active.update { it + 1 }
         val listener = Listener(onBatch, onProgress, onFound)
         var run: Run? = null
@@ -98,10 +106,13 @@ class LibraryRepository(
 
     private suspend fun isFresh(only: Long?, maxAgeMs: Long): Boolean {
         if (synchronized(runLock) { running != null || waiting != null }) return false
-        val ids = db.locations().all().filter { it.enabled && (only == null || it.id == only) }.map { it.id }
+        val ids = inScope(only)
         val now = clock()
         return ids.isNotEmpty() && ids.all { id -> lastOk[id]?.let { now - it < maxAgeMs } == true }
     }
+
+    private suspend fun inScope(only: Long?): List<Long> =
+        db.locations().all().filter { it.enabled && (only == null || it.id == only) }.map { it.id }
 
     private suspend fun execute(run: Run) {
         try {

@@ -83,6 +83,8 @@
     <string name="dir_right">Nach rechts →</string>
     <string name="dir_left">Nach links ←</string>
     <string name="dir_down">Nach unten ↓</string>
+    <string name="auto_scan">Beim Öffnen automatisch einlesen</string>
+    <string name="auto_scan_hint">Aus: Das Bewerten geht sofort mit dem gespeicherten Stand weiter, auch nach einem Neustart der App – praktisch bei sehr großen Ordnern. Neue Speicherorte und geänderte Ordner werden trotzdem eingelesen; der ↻-Knopf liest jederzeit neu ein.</string>
     <string name="swipe_button">Knopf unter dem Foto</string>
     <string name="settings_storages_hint">Hinzufügen, Ordner wählen, aktivieren, „1 ★ als unbewertet“, entfernen – auf der Startseite.</string>
     <string name="to_home">Zur Startseite</string>

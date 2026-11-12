@@ -72,10 +72,11 @@ class RateCore(
     /**
      * Speicherorte neu einlesen; solange noch nichts angezeigt wird, erscheinen Fotos ordnerweise.
      * [maxAgeMs]: kürzlich fehlerfrei Eingelesenes nicht erneut einlesen (beim Öffnen), null = immer (Knopf).
+     * [skipIfCached]: automatisches Einlesen ist aus – nur noch nie Eingelesenes einlesen.
      */
-    suspend fun refresh(maxAgeMs: Long? = null) {
+    suspend fun refresh(maxAgeMs: Long? = null, skipIfCached: Boolean = false) {
         lock.withLock { loading = true; scanned = 0; found = 0; emit() }
-        val result = library.refreshAll(only = only, maxAgeMs = maxAgeMs, onBatch = {
+        val result = library.refreshAll(only = only, maxAgeMs = maxAgeMs, skipIfCached = skipIfCached, onBatch = {
             lock.withLock { if (snapshot.getOrNull(index) == null && index == 0 && undoStack.isEmpty()) { resnapshot(); emit() } }
         }, onProgress = { n -> lock.withLock { scanned = n; emit() } },
             onFound = { n -> lock.withLock { found = n; emit() } })

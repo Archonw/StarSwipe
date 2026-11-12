@@ -2,6 +2,7 @@ package io.github.archonw.starswipe.settings
 
 import android.content.Context
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
+import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
@@ -17,6 +18,8 @@ data class UiSettings(
     val swipeMap: Map<Direction, Int> = DEFAULT_SWIPE,
     /** Sternzahl des Bewertungsknopfs im Wisch-Modus. */
     val buttonStars: Int = 1,
+    /** Beim Öffnen des Bewertens automatisch neu einlesen; aus = gespeicherten Stand nutzen. */
+    val autoScan: Boolean = true,
 ) {
     companion object {
         val DEFAULT_SWIPE = mapOf(Direction.UP to 5, Direction.RIGHT to 4, Direction.LEFT to 3, Direction.DOWN to 2)
@@ -28,6 +31,7 @@ class Settings(context: Context, name: String = "settings") {
     private val store = PreferenceDataStoreFactory.create { context.preferencesDataStoreFile(name) }
     private val modeKey = stringPreferencesKey("mode")
     private val buttonKey = intPreferencesKey("button_stars")
+    private val autoScanKey = booleanPreferencesKey("auto_scan")
     private fun swipeKey(d: Direction) = intPreferencesKey("swipe_${d.name}")
 
     val ui: Flow<UiSettings> = store.data.map { p ->
@@ -35,10 +39,12 @@ class Settings(context: Context, name: String = "settings") {
             mode = p[modeKey]?.let { runCatching { RatingMode.valueOf(it) }.getOrNull() } ?: RatingMode.STAR_BAR,
             swipeMap = Direction.entries.associateWith { p[swipeKey(it)] ?: UiSettings.DEFAULT_SWIPE.getValue(it) },
             buttonStars = p[buttonKey] ?: 1,
+            autoScan = p[autoScanKey] ?: true,
         )
     }
 
     suspend fun setMode(m: RatingMode) { store.edit { it[modeKey] = m.name } }
     suspend fun setButtonStars(stars: Int) { store.edit { it[buttonKey] = stars.coerceIn(1, 5) } }
+    suspend fun setAutoScan(on: Boolean) { store.edit { it[autoScanKey] = on } }
     suspend fun setSwipe(d: Direction, stars: Int) { store.edit { it[swipeKey(d)] = stars.coerceIn(1, 5) } }
 }

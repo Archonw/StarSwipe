@@ -37,4 +37,9 @@ class SettingsTest {
         s.setButtonStars(3); assertEquals(3, s.ui.first().buttonStars)
         s.setButtonStars(7); assertEquals(5, s.ui.first().buttonStars)
     }
+
+    @Test fun autoScanDefaultsOnAndPersists() = runBlocking {
+        assertEquals(true, s.ui.first().autoScan)
+        s.setAutoScan(false); assertEquals(false, s.ui.first().autoScan)
+    }
 }

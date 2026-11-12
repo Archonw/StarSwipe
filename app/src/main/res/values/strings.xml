@@ -84,6 +84,8 @@
     <string name="dir_right">Right →</string>
     <string name="dir_left">Left ←</string>
     <string name="dir_down">Down ↓</string>
+    <string name="auto_scan">Read folders automatically when opening</string>
+    <string name="auto_scan_hint">Off: rating continues right away with the stored state, even after restarting the app – useful for very large folders. New storage locations and changed folders are still read; the ↻ button reads anytime.</string>
     <string name="swipe_button">Button below the photo</string>
     <string name="settings_storages_hint">Add, choose folders, enable, “1 ★ as unrated”, remove – on the home screen.</string>
     <string name="to_home">Go to home screen</string>

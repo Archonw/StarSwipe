@@ -41,6 +41,7 @@ interface PhotoDao {
     fun unratedCounts(): Flow<List<StorageCount>>
 
     @Query("SELECT * FROM photos WHERE storageId = :storageId") suspend fun byStorage(storageId: Long): List<PhotoEntity>
+    @Query("SELECT COUNT(*) FROM photos WHERE storageId = :storageId") suspend fun countFor(storageId: Long): Int
     @Query("SELECT * FROM photos WHERE storageId = :storageId AND folder = :folder")
     suspend fun byFolder(storageId: Long, folder: String): List<PhotoEntity>
     @Query("SELECT * FROM photos WHERE storageId = :storageId AND path = :path") suspend fun get(storageId: Long, path: String): PhotoEntity?

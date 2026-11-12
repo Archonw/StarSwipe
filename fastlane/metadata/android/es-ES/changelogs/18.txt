@@ -1,0 +1,1 @@
+• Nuevo ajuste «Leer carpetas automáticamente al abrir»: desactivado, la valoración continúa al momento con el estado guardado, incluso tras reiniciar la app; útil con carpetas muy grandes

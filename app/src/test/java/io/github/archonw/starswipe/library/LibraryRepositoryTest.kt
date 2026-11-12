@@ -143,6 +143,25 @@ class LibraryRepositoryTest {
         assertEquals(1, db.photos().byStorage(id).size)
     }
 
+    /** Automatisches Einlesen aus: vorhandener Stand wird genutzt, auch nach Neustart (neues Repository). */
+    @Test fun skipIfCachedUsesStoredPhotos() = runBlocking {
+        val a = db.locations().insert(location(name = "A"))
+        val b = db.locations().insert(location(name = "B"))
+        val ca = Counting(mapOf("Album/a.jpg" to byteArrayOf(1))).apply { gate.complete(Unit) }
+        val cb = Counting(mapOf("Album/b.jpg" to byteArrayOf(1))).apply { gate.complete(Unit) }
+        val stores = mapOf(a to ca.storage, b to cb.storage)
+        LibraryRepository(db) { stores[it] }.refreshAll(only = a)
+        val afterRestart = LibraryRepository(db) { stores[it] }
+        afterRestart.refreshAll(only = a, skipIfCached = true)
+        assertEquals(1, ca.scans.get())
+        // B noch nie eingelesen → wird eingelesen, A bleibt beim gespeicherten Stand
+        afterRestart.refreshAll(skipIfCached = true)
+        assertEquals(1, cb.scans.get())
+        afterRestart.refreshAll(skipIfCached = true)
+        assertEquals(1, ca.scans.get()); assertEquals(1, cb.scans.get())
+        assertEquals(2, db.photos().byStorage(a).size + db.photos().byStorage(b).size)
+    }
+
     /** Solange ein Einlesen läuft oder wartet, ist [LibraryRepository.active] > 0 (hält den Vordergrund-Dienst am Leben). */
     @Test fun activeCountsRunningAndWaitingScans() = runBlocking {
         val id = db.locations().insert(location())
