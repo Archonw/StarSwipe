@@ -1,0 +1,1 @@
+• Fix: with a slow connection, reading folders no longer starts over and over – opening the rating screen again joins the scan already running

@@ -1,0 +1,1 @@
+• Behoben: Bei langsamer Verbindung beginnt das Einlesen nicht mehr immer wieder von vorn – erneutes Öffnen des Bewertens schließt sich dem laufenden Einlesen an

@@ -85,7 +85,7 @@ class AddStorageViewModel(private val c: AppContainer) : ViewModel() {
     fun saveLocal(uri: String, name: String) = viewModelScope.launch {
         val id = core.saveLocal(uri, form.value.name.ifBlank { name })
         saved.value = id to StorageType.LOCAL
-        c.scope.launch { c.library.refreshAll() }
+        c.scope.launch { c.library.refreshAll(rescan = true) }
     }
 }
 
@@ -119,7 +119,7 @@ class FolderPickerViewModel(private val c: AppContainer, private val id: Long) :
 
     fun save() = viewModelScope.launch {
         core?.save(current = dir.value)
-        c.scope.launch { c.library.refreshAll() }
+        c.scope.launch { c.library.refreshAll(rescan = true) }
         done.value = true
     }
 }

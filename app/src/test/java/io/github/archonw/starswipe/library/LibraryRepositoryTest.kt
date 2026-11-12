@@ -56,6 +56,64 @@ class LibraryRepositoryTest {
         assertEquals(1, max)
     }
 
+    /** Gezählter, anhaltbarer Speicher: list() auf den Wurzelordner zählt als ein Einlesen. */
+    private class Counting(files: Map<String, ByteArray>) {
+        val mem = InMemoryStorage(files)
+        val scans = AtomicInteger(0)
+        @Volatile var gate = kotlinx.coroutines.CompletableDeferred<Unit>()
+        val storage = object : PhotoStorage by mem {
+            override suspend fun list(dir: String): List<Entry> { if (dir == "Album") scans.incrementAndGet(); gate.await(); return mem.list(dir) }
+        }
+    }
+
+    /** Schlechtes Netz: Bewerten-Bildschirm mehrfach geöffnet → kein Stapel ganzer Einlese-Durchgänge, sondern Anschluss an den laufenden. */
+    @Test fun requestsDuringRunningScanJoinIt() = runBlocking {
+        val id = db.locations().insert(location())
+        val c = Counting(mapOf("Album/a.jpg" to byteArrayOf(1)))
+        val repo = LibraryRepository(db) { if (it == id) c.storage else null }
+        val first = async(Dispatchers.Default) { repo.refreshAll() }
+        repo.scanning.first { it != null }
+        val found = AtomicInteger(0)
+        val joiners = (1..3).map { async(Dispatchers.Default) { repo.refreshAll(onFound = { found.set(it) }) } }
+        repo.active.first { it == 4 }
+        c.gate.complete(Unit)
+        (joiners + first).awaitAll()
+        assertEquals(1, c.scans.get())
+        assertEquals(1, found.get())
+    }
+
+    /** Geänderte Ordner während eines Einlesens: genau ein Folge-Durchgang, egal wie oft angefordert. */
+    @Test fun rescanRequestsCoalesceIntoOneFollowUp() = runBlocking {
+        val id = db.locations().insert(location())
+        val c = Counting(mapOf("Album/a.jpg" to byteArrayOf(1)))
+        val repo = LibraryRepository(db) { if (it == id) c.storage else null }
+        val first = async(Dispatchers.Default) { repo.refreshAll() }
+        repo.scanning.first { it != null }
+        val more = (1..3).map { async(Dispatchers.Default) { repo.refreshAll(rescan = true) } }
+        repo.active.first { it == 4 }
+        c.gate.complete(Unit)
+        (more + first).awaitAll()
+        assertEquals(2, c.scans.get())
+    }
+
+    /** Wer nur einen Speicherort will, schließt sich nicht einem Einlesen eines anderen an. */
+    @Test fun joinOnlyWhenRunningScanCoversRequest() = runBlocking {
+        val a = db.locations().insert(location(name = "A"))
+        val b = db.locations().insert(location(name = "B"))
+        val ca = Counting(mapOf("Album/a.jpg" to byteArrayOf(1)))
+        val cb = Counting(mapOf("Album/b.jpg" to byteArrayOf(1))).apply { gate.complete(Unit) }
+        val repo = LibraryRepository(db) { mapOf(a to ca.storage, b to cb.storage)[it] }
+        val first = async(Dispatchers.Default) { repo.refreshAll(only = a) }
+        repo.scanning.first { it != null }
+        val second = async(Dispatchers.Default) { repo.refreshAll(only = b) }
+        repo.active.first { it == 2 }
+        ca.gate.complete(Unit)
+        listOf(first, second).awaitAll()
+        assertEquals(1, ca.scans.get())
+        assertEquals(1, cb.scans.get())
+        assertEquals(1, db.photos().byStorage(b).size)
+    }
+
     /** Solange ein Einlesen läuft oder wartet, ist [LibraryRepository.active] > 0 (hält den Vordergrund-Dienst am Leben). */
     @Test fun activeCountsRunningAndWaitingScans() = runBlocking {
         val id = db.locations().insert(location())

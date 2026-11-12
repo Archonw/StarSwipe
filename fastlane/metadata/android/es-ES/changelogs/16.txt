@@ -1,0 +1,1 @@
+• Corregido: con una conexión lenta, la lectura de carpetas ya no vuelve a empezar una y otra vez; abrir de nuevo la valoración se une a la lectura en curso
