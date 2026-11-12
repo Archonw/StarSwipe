@@ -18,6 +18,11 @@ import kotlinx.coroutines.withContext
 import java.time.Instant
 
 class RateViewModel(private val c: AppContainer, only: Long? = null) : ViewModel() {
+    companion object {
+        /** Beim Öffnen nicht neu einlesen, wenn das letzte fehlerfreie Einlesen jünger ist (Knopf „Neu einlesen“ liest immer). */
+        const val REUSE_SCAN_MS = 15 * 60 * 1000L
+    }
+
     private val core = RateCore(c.library, c.ratings, only) { c.db.locations().get(it)?.name }
 
     val state: StateFlow<RateState> = combine(core.state, c.ratings.pendingCount()) { s, p -> s.copy(pending = p) }
@@ -32,7 +37,7 @@ class RateViewModel(private val c: AppContainer, only: Long? = null) : ViewModel
         viewModelScope.launch {
             core.load()
             // Einlesen im App-Bereich: läuft weiter, wenn der Bildschirm kurz verlassen wird (Einstellungen o. Ä.).
-            c.scope.launch { core.refresh() }
+            c.scope.launch { core.refresh(maxAgeMs = REUSE_SCAN_MS) }
         }
         viewModelScope.launch { core.watch() }
     }

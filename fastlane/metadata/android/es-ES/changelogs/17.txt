@@ -1,0 +1,1 @@
+• Al volver a abrir la valoración ya no se leen de nuevo las carpetas si se leyeron sin errores en los últimos 15 minutos (el botón de recargar sigue leyendo al momento)

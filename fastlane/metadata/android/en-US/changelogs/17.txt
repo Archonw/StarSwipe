@@ -1,0 +1,1 @@
+• Opening the rating screen again no longer reads all folders anew if they were read successfully in the last 15 minutes (the refresh button still reads immediately)

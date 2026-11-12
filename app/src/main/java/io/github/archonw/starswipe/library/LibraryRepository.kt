@@ -51,6 +51,9 @@ class LibraryRepository(
     }
 
     private val runLock = Any()
+    /** Zeitpunkt des letzten fehlerfreien Einlesens je Speicherort (nur solange die App läuft). */
+    private val lastOk = java.util.concurrent.ConcurrentHashMap<Long, Long>()
+    internal var clock: () -> Long = System::currentTimeMillis
     private var running: Run? = null
     private var waiting: Run? = null
 
@@ -59,6 +62,8 @@ class LibraryRepository(
      * Läuft schon ein Einlesen, das [only] abdeckt, schließt sich die Anfrage ihm an (kein zweiter Durchgang,
      * wichtig bei langsamem Netz). [rescan] = Einstellungen haben sich geändert, daher nach dem laufenden
      * noch einmal einlesen; mehrere solche Anfragen teilen sich einen Folge-Durchgang.
+     * [maxAgeMs]: wurden alle betroffenen Speicherorte vor höchstens so langer Zeit fehlerfrei eingelesen,
+     * entfällt das Einlesen (erneutes Öffnen des Bewertens); null = immer einlesen.
      * Ergebnis: Fehler je Speicherort-ID. [onBatch] läuft nach jedem gespeicherten Ordner.
      */
     suspend fun refreshAll(
@@ -67,7 +72,9 @@ class LibraryRepository(
         onFound: suspend (Int) -> Unit = {},
         only: Long? = null,
         rescan: Boolean = false,
+        maxAgeMs: Long? = null,
     ): Map<Long, StorageException> {
+        if (maxAgeMs != null && !rescan && isFresh(only, maxAgeMs)) return emptyMap()
         _active.update { it + 1 }
         val listener = Listener(onBatch, onProgress, onFound)
         var run: Run? = null
@@ -87,6 +94,13 @@ class LibraryRepository(
             run?.listeners?.remove(listener)
             _active.update { it - 1 }
         }
+    }
+
+    private suspend fun isFresh(only: Long?, maxAgeMs: Long): Boolean {
+        if (synchronized(runLock) { running != null || waiting != null }) return false
+        val ids = db.locations().all().filter { it.enabled && (only == null || it.id == only) }.map { it.id }
+        val now = clock()
+        return ids.isNotEmpty() && ids.all { id -> lastOk[id]?.let { now - it < maxAgeMs } == true }
     }
 
     private suspend fun execute(run: Run) {
@@ -123,6 +137,7 @@ class LibraryRepository(
                 val s = storages(loc.id)
                 if (s == null) { failures[loc.id] = StorageException.Unauthorized(); continue } // z. B. Passwort fehlt
                 _scanning.value = ScanStatus(loc.id)
+                lastOk.remove(loc.id)
                 try {
                     var last = 0
                     var lastFound = 0
@@ -130,6 +145,7 @@ class LibraryRepository(
                         scanner.scan(loc, s, { pendingPaths(loc.id) }, onBatch,
                             onProgress = { n -> last = n; _scanning.value = ScanStatus(loc.id, lastFound, n); onProgress(before + n) },
                             onFound = { n -> lastFound = n; _scanning.value = ScanStatus(loc.id, n, last); onFound(foundBefore + n) })
+                        lastOk[loc.id] = clock()
                     } finally { before += last; foundBefore += lastFound }
                 } catch (e: CancellationException) {
                     throw e

@@ -1,0 +1,1 @@
+• Erneutes Öffnen des Bewertens liest die Ordner nicht mehr neu ein, wenn sie in den letzten 15 Minuten fehlerfrei eingelesen wurden (der Neu-einlesen-Knopf liest weiterhin sofort)

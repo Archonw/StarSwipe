@@ -114,6 +114,35 @@ class LibraryRepositoryTest {
         assertEquals(1, db.photos().byStorage(b).size)
     }
 
+    /** Bewerten erneut geöffnet kurz nach fertigem Einlesen: nicht gleich wieder alles einlesen. */
+    @Test fun recentScanIsReusedWithinMaxAge() = runBlocking {
+        val id = db.locations().insert(location())
+        val c = Counting(mapOf("Album/a.jpg" to byteArrayOf(1))).apply { gate.complete(Unit) }
+        var clock = 1_000_000L
+        val repo = LibraryRepository(db) { if (it == id) c.storage else null }.also { it.clock = { clock } }
+        repo.refreshAll(maxAgeMs = 60_000)
+        clock += 59_000
+        repo.refreshAll(maxAgeMs = 60_000)
+        repo.refreshAll(only = id, maxAgeMs = 60_000)
+        assertEquals(1, c.scans.get())
+        clock += 2_000
+        repo.refreshAll(maxAgeMs = 60_000)
+        assertEquals(2, c.scans.get())
+        repo.refreshAll() // ohne Höchstalter (Knopf „Neu einlesen“): immer
+        assertEquals(3, c.scans.get())
+    }
+
+    /** Ein fehlgeschlagener Speicherort gilt nicht als frisch eingelesen. */
+    @Test fun failedScanIsNotReused() = runBlocking {
+        val id = db.locations().insert(location())
+        val mem = InMemoryStorage(mapOf("Album/a.jpg" to byteArrayOf(1))).apply { failWith = StorageException.Unreachable(java.io.IOException()) }
+        val repo = LibraryRepository(db) { if (it == id) mem else null }
+        assertTrue(repo.refreshAll(maxAgeMs = 60_000).containsKey(id))
+        mem.failWith = null
+        assertEquals(emptyMap<Long, StorageException>(), repo.refreshAll(maxAgeMs = 60_000))
+        assertEquals(1, db.photos().byStorage(id).size)
+    }
+
     /** Solange ein Einlesen läuft oder wartet, ist [LibraryRepository.active] > 0 (hält den Vordergrund-Dienst am Leben). */
     @Test fun activeCountsRunningAndWaitingScans() = runBlocking {
         val id = db.locations().insert(location())
