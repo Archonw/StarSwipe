@@ -41,5 +41,11 @@ class RatingWorker(ctx: Context, params: WorkerParameters) : CoroutineWorker(ctx
                 ExistingWorkPolicy.APPEND_OR_REPLACE, b.build(),
             )
         }
+
+        /** Vom Nutzer angestoßen: sofort versuchen, ohne auf Netz-Bedingung oder Wartezeit (Backoff) zu warten. */
+        fun runNow(context: Context) {
+            WorkManager.getInstance(context).enqueueUniqueWork("rating-flush-now", ExistingWorkPolicy.KEEP,
+                OneTimeWorkRequestBuilder<RatingWorker>().setInputData(workDataOf(KEY_LOCAL to true)).build())
+        }
     }
 }

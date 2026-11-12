@@ -1,0 +1,2 @@
+• Startseite zeigt, wie viele Bewertungen noch auf den Upload warten, auch je Speicherort
+• Neuer Knopf „Jetzt hochladen“ versucht es sofort erneut

@@ -1,0 +1,2 @@
+• Home screen shows how many ratings are still waiting for upload, per storage location too
+• New "Upload now" button retries right away

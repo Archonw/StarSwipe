@@ -69,6 +69,12 @@ class AppContainer(context: Context) {
         RatingWorker.enqueue(app, local)
     }
 
+    /** Wartende Bewertungen jetzt hochladen; bleibt danach etwas übrig, kümmert sich die Netz-Variante darum. */
+    fun uploadNow() {
+        RatingWorker.runNow(app)
+        RatingWorker.enqueue(app, local = false)
+    }
+
     fun enqueueAllFlushes() {
         RatingWorker.enqueue(app, local = true)
         RatingWorker.enqueue(app, local = false)

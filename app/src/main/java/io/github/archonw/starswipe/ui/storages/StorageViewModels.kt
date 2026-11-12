@@ -28,6 +28,13 @@ class StorageListViewModel(private val c: AppContainer) : ViewModel() {
         .map { l -> l.associate { it.storageId to it.count } }
         .stateIn(viewModelScope, SharingStarted.Eagerly, emptyMap())
 
+    /** Noch nicht hochgeladene Bewertungen je Speicherort. */
+    val pending: StateFlow<Map<Long, Int>> = c.db.pending().openCounts()
+        .map { l -> l.associate { it.storageId to it.count } }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyMap())
+
+    fun uploadNow() = c.uploadNow()
+
     /** Speicherort, der gerade eingelesen wird (auch wenn das Einlesen woanders gestartet wurde). */
     val scanning = c.library.scanning
 

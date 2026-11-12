@@ -2,6 +2,7 @@
 <resources>
     <string name="back">Atrás</string>
     <string name="cancel">Cancelar</string>
+    <string name="upload_now">Subir ahora</string>
     <string name="ok">Aceptar</string>
     <string name="settings">Ajustes</string>
     <string name="add_storage">Añadir ubicación</string>

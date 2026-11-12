@@ -42,6 +42,8 @@ interface PendingRatingDao {
     @Query("SELECT * FROM pending_ratings WHERE id = :id") suspend fun get(id: Long): PendingRatingEntity?
     @Query("SELECT * FROM pending_ratings WHERE done = 0 ORDER BY id") suspend fun open(): List<PendingRatingEntity>
     @Query("SELECT COUNT(*) FROM pending_ratings WHERE done = 0") fun openCount(): Flow<Int>
+    @Query("SELECT storageId, COUNT(*) AS count FROM pending_ratings WHERE done = 0 GROUP BY storageId")
+    fun openCounts(): Flow<List<io.github.archonw.starswipe.db.StorageCount>>
     @Query("SELECT photoPath FROM pending_ratings WHERE done = 0 AND storageId = :storageId")
     suspend fun openPaths(storageId: Long): List<String>
     @Query("SELECT COUNT(*) FROM pending_ratings WHERE done = 0 AND storageId IN (:ids)")

@@ -1,0 +1,2 @@
+• La pantalla principal muestra cuántas valoraciones esperan subirse, también por ubicación
+• Nuevo botón «Subir ahora» lo reintenta al momento

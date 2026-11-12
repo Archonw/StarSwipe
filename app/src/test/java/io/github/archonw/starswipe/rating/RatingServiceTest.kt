@@ -66,6 +66,16 @@ class RatingServiceTest {
         assertEquals(1, svc.pendingCount().first())
     }
 
+    @Test fun openCountsPerStorage() = runBlocking {
+        val (id, _, svc) = setup(mapOf("Album/a.jpg" to byteArrayOf(1), "Album/b.jpg" to byteArrayOf(2)))
+        assertEquals(emptyList<Any>(), db.pending().openCounts().first())
+        svc.rate(photoOf(id, "Album/a.jpg"), 3)
+        svc.rate(photoOf(id, "Album/b.jpg"), 4)
+        assertEquals(mapOf(id to 2), db.pending().openCounts().first().associate { it.storageId to it.count })
+        svc.flush()
+        assertEquals(emptyList<Any>(), db.pending().openCounts().first())
+    }
+
     @Test fun latestPendingWins() = runBlocking {
         val (id, mem, svc) = setup(mapOf("Album/a.jpg" to byteArrayOf(1)))
         svc.rate(photoOf(id, "Album/a.jpg"), 3)

@@ -25,6 +25,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.CloudUpload
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Star
@@ -60,6 +61,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.res.pluralStringResource
 import io.github.archonw.starswipe.R
 import io.github.archonw.starswipe.ui.UiText
 import io.github.archonw.starswipe.ui.asString
@@ -79,6 +81,7 @@ fun StorageListScreen(onAdd: () -> Unit, onFolders: (Long) -> Unit, onRate: (Lon
     val locs by vm.locations.collectAsState()
     val unrated by vm.unrated.collectAsState()
     val scan by vm.scanning.collectAsState()
+    val pending by vm.pending.collectAsState()
     val active = locs.filter { it.enabled }
     var confirm by remember { mutableStateOf<StorageLocationEntity?>(null) }
 
@@ -104,6 +107,17 @@ fun StorageListScreen(onAdd: () -> Unit, onFolders: (Long) -> Unit, onRate: (Lon
                     Text(stringResource(if (active.size > 1) R.string.rate_all else R.string.rate_start), style = MaterialTheme.typography.titleMedium)
                     if (total > 0) Text("  ($total)")
                 }
+                val waiting = pending.values.sum()
+                if (waiting > 0) Card(Modifier.fillMaxWidth().padding(top = 10.dp), colors = androidx.compose.material3.CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.secondaryContainer)) {
+                    Row(Modifier.padding(start = 14.dp, end = 6.dp, top = 6.dp, bottom = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Default.CloudUpload, null, tint = MaterialTheme.colorScheme.onSecondaryContainer)
+                        Spacer(Modifier.width(10.dp))
+                        Text(pluralStringResource(R.plurals.pending_upload, waiting, waiting), Modifier.weight(1f),
+                            style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSecondaryContainer)
+                        TextButton(onClick = { vm.uploadNow() }) { Text(stringResource(R.string.upload_now)) }
+                    }
+                }
                 Text(stringResource(R.string.storages_header), Modifier.padding(top = 8.dp), style = MaterialTheme.typography.titleSmall)
             }
             items(locs, key = { it.id }) { l ->
@@ -116,6 +130,14 @@ fun StorageListScreen(onAdd: () -> Unit, onFolders: (Long) -> Unit, onRate: (Lon
                                     else if (l.folders.isEmpty()) stringResource(R.string.no_folders_chosen)
                                     else l.folders.joinToString(", ").ifEmpty { stringResource(R.string.root_folder) },
                                     style = MaterialTheme.typography.bodySmall)
+                                pending[l.id]?.takeIf { it > 0 }?.let { n ->
+                                    Row(Modifier.padding(top = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+                                        Icon(Icons.Default.CloudUpload, null, Modifier.size(20.dp), tint = MaterialTheme.colorScheme.primary)
+                                        Spacer(Modifier.width(8.dp))
+                                        Text(pluralStringResource(R.plurals.pending_upload, n, n), style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.primary)
+                                    }
+                                }
                                 scan?.takeIf { it.storageId == l.id }?.let { st ->
                                     Row(Modifier.padding(top = 6.dp), verticalAlignment = Alignment.CenterVertically) {
                                         androidx.compose.material3.CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.5.dp)
