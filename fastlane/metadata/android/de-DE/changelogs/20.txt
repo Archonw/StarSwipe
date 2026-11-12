@@ -1,0 +1,2 @@
+• Neuer Knopf „Zu Ordner springen“ im Bewerten: zeigt alle Ordner der Warteschlange mit Anzahl Fotos; antippen springt zum ersten unbewerteten Foto dort
+• Behoben: Ein Ordnerwechsel genau beim Start des Einlesens dieses Speicherorts konnte übersehen werden

@@ -113,13 +113,17 @@ class LibraryRepository(
         return ids.isNotEmpty() && ids.all { id -> lastOk[id]?.let { now - it < maxAgeMs } == true }
     }
 
-    /** Speicherort, der gerade eingelesen wird, mit seinem Einlese-Auftrag (zum gezielten Abbrechen). */
-    @Volatile private var current: Pair<Long, Job>? = null
+    // Speicherort, der gerade dran ist, und sein Einlese-Auftrag (zum gezielten Abbrechen). Ein Stopp, der kommt,
+    // bevor der Auftrag existiert, wird vorgemerkt – sonst ginge er im Zeitfenster dazwischen verloren.
+    private val stopLock = Any()
+    private var currentId: Long? = null
+    private var currentJob: Job? = null
+    private var stopRequested = false
 
     /** Laufendes Einlesen dieses Speicherorts abbrechen (ausgeschaltet, entfernt, Ordner geändert); andere laufen weiter. */
     fun stopScanOf(id: Long) {
         lastOk.remove(id)
-        current?.takeIf { it.first == id }?.second?.cancel()
+        synchronized(stopLock) { if (currentId == id) { stopRequested = true; currentJob?.cancel() } }
     }
 
     /**
@@ -165,6 +169,7 @@ class LibraryRepository(
             var before = 0
             var foundBefore = 0
             for (id in inScope(only)) {
+                synchronized(stopLock) { currentId = id; currentJob = null; stopRequested = false }
                 // Erst jetzt lesen: Ordner können sich geändert haben, während andere Speicherorte dran waren.
                 val loc = db.locations().get(id)?.takeIf { it.enabled } ?: continue
                 if (loc.folders.isEmpty()) {
@@ -184,11 +189,11 @@ class LibraryRepository(
                                     onProgress = { n -> last = n; _scanning.value = ScanStatus(loc.id, lastFound, n); onProgress(before + n) },
                                     onFound = { n -> lastFound = n; _scanning.value = ScanStatus(loc.id, n, last); onFound(foundBefore + n) })
                             }
-                            current = loc.id to job
+                            synchronized(stopLock) { currentJob = job; if (stopRequested) job.cancel() }
                             job.join()
                             job.isCancelled
                         }
-                    } finally { current = null; before += last; foundBefore += lastFound }
+                    } finally { before += last; foundBefore += lastFound }
                     // Gestoppt (Ordner geändert, ausgeschaltet, entfernt): kein Fehler, der Folge-Durchgang übernimmt.
                     if (!stopped) lastOk[loc.id] = clock()
                 } catch (e: CancellationException) {
@@ -201,6 +206,7 @@ class LibraryRepository(
                     _scanning.value = null
                 }
             }
+            synchronized(stopLock) { currentId = null; currentJob = null }
             return failures
         }
     }

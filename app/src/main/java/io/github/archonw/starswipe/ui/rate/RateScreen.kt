@@ -19,9 +19,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.clickable
+import kotlinx.coroutines.launch
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Undo
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.FolderOpen
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Home
@@ -93,6 +96,8 @@ fun RateScreen(only: Long?, onSettings: () -> Unit, onStorages: () -> Unit, onHo
     val ui by vm.ui.collectAsState()
     val hasLocations by vm.hasLocations.collectAsState()
     val ctx = LocalContext.current
+    var jumpList by remember { mutableStateOf<List<FolderJump>?>(null) }
+    val scope = androidx.compose.runtime.rememberCoroutineScope()
 
     // Vorladen der nächsten Fotos
     LaunchedEffect(s.upcoming) {
@@ -148,12 +153,41 @@ fun RateScreen(only: Long?, onSettings: () -> Unit, onStorages: () -> Unit, onHo
                 CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
                 if (s.found > 0) Text(" ${s.scanned}/${s.found}", color = Color(0xFFCCCCCC), style = MaterialTheme.typography.bodySmall)
             }
+            if (s.remaining > 0 || s.canGoBack) IconButton(onClick = { scope.launch { jumpList = vm.folders() } }) {
+                Icon(Icons.Default.FolderOpen, stringResource(R.string.jump_to_folder), tint = Color.White)
+            }
             IconButton(onClick = { vm.setShowRated(!s.showRated) }) {
                 Icon(if (s.showRated) Icons.Default.Visibility else Icons.Default.VisibilityOff,
                     stringResource(if (s.showRated) R.string.show_only_unrated else R.string.show_rated_too), tint = Color.White)
             }
             IconButton(onClick = { vm.refresh() }) { Icon(Icons.Default.Refresh, stringResource(R.string.rescan), tint = Color.White) }
             IconButton(onClick = onSettings) { Icon(Icons.Default.Settings, stringResource(R.string.settings), tint = Color.White) }
+        }
+
+        jumpList?.let { list ->
+            androidx.compose.material3.AlertDialog(
+                onDismissRequest = { jumpList = null },
+                confirmButton = { TextButton(onClick = { jumpList = null }) { Text(stringResource(R.string.cancel)) } },
+                title = { Text(stringResource(R.string.jump_to_folder)) },
+                text = {
+                    val listState = androidx.compose.foundation.lazy.rememberLazyListState(
+                        initialFirstVisibleItemIndex = list.indexOfFirst { it.current }.coerceAtLeast(0))
+                    androidx.compose.foundation.lazy.LazyColumn(state = listState) {
+                        items(list.size) { i ->
+                            val f = list[i]
+                            Row(Modifier.fillMaxWidth()
+                                .background(if (f.current) MaterialTheme.colorScheme.secondaryContainer else Color.Transparent)
+                                .clickable { vm.jumpTo(f); jumpList = null }
+                                .padding(horizontal = 8.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
+                                Text(f.label, Modifier.weight(1f), maxLines = 2, overflow = TextOverflow.Ellipsis,
+                                    fontWeight = if (f.current) FontWeight.Bold else FontWeight.Normal)
+                                Text(pluralStringResource(R.plurals.photos_count, f.count, f.count),
+                                    style = MaterialTheme.typography.bodySmall)
+                            }
+                        }
+                    }
+                },
+            )
         }
 
         // Fußzeile

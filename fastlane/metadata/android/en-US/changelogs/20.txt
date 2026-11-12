@@ -1,0 +1,2 @@
+• New "Jump to folder" button in the rating screen: lists all folders of the queue with their photo count; tap to jump to the first unrated photo there
+• Fix: a folder change right when reading of that location started could be missed

@@ -1,0 +1,2 @@
+• Nuevo botón «Ir a carpeta» en la valoración: muestra todas las carpetas de la cola con su número de fotos; al tocar una se salta a su primera foto sin valorar
+• Corregido: un cambio de carpetas justo al empezar la lectura de esa ubicación podía pasarse por alto

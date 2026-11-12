@@ -31,6 +31,9 @@ data class RateState(
     val found: Int = 0,
 )
 
+/** Ein Ordner der Warteschlange zum Hinspringen. [label]: mit Speicherort-Name, falls mehrere beteiligt sind. */
+data class FolderJump(val storageId: Long, val folder: String, val label: String, val count: Int, val current: Boolean)
+
 /**
  * Ablauf beim Bewerten. Arbeitet auf einem Schnappschuss der Warteschlange, damit das
  * gerade bewertete Foto nicht durch Datenbank-Updates „wegspringt“. Alle Zustandsänderungen
@@ -154,6 +157,35 @@ class RateCore(
     private suspend fun appendFresh() {
         val known = snapshot.map { it.storageId to it.path }.toHashSet()
         snapshot = snapshot + queue().filter { (it.storageId to it.path) !in known }
+    }
+
+    /** Ordner in Reihenfolge der Warteschlange (neueste zuerst) mit Anzahl Fotos darin. */
+    suspend fun folders(): List<FolderJump> = lock.withLock {
+        val cur = snapshot.getOrNull(index)
+        val groups = LinkedHashMap<Pair<Long, String>, Int>()
+        snapshot.forEach { groups.merge(it.storageId to it.folder, 1, Int::plus) }
+        val multi = groups.keys.map { it.first }.distinct().size > 1
+        // Gemeinsamen Pfadanfang weglassen (lange Pfade wie Bilder/Alle/Jan/2026/…), letzter Teil bleibt immer.
+        val parts = groups.keys.map { it.second.split('/').filter(String::isNotEmpty) }
+        val common = if (multi || parts.size < 2) 0 else {
+            val max = parts.minOf { it.size } - 1
+            (0 until max.coerceAtLeast(0)).takeWhile { i -> parts.all { it[i] == parts[0][i] } }.count()
+        }
+        groups.map { (k, n) ->
+            val segs = k.second.split('/').filter(String::isNotEmpty)
+            val drop = (common - 1).coerceAtLeast(0) // einen übergeordneten Teil zur Orientierung behalten (…/2026/11)
+            val path = if (drop > 0) "…/" + segs.drop(drop).joinToString("/") else k.second.ifEmpty { "/" }
+            val label = if (multi) "${nameCache[k.first] ?: names(k.first)?.also { nameCache[k.first] = it } ?: ""} · $path" else path
+            FolderJump(k.first, k.second, label, n, cur != null && cur.storageId == k.first && cur.folder == k.second)
+        }
+    }
+
+    /** Zum ersten in dieser Sitzung noch nicht bewerteten Foto des Ordners springen (sonst zum ersten des Ordners). */
+    suspend fun jumpTo(f: FolderJump) = lock.withLock {
+        val ratedHere = undoStack.map { it.first }.toHashSet()
+        val inFolder = snapshot.indices.filter { snapshot[it].storageId == f.storageId && snapshot[it].folder == f.folder }
+        index = inFolder.firstOrNull { it !in ratedHere } ?: inFolder.firstOrNull() ?: index
+        emit()
     }
 
     suspend fun skip() = lock.withLock { if (index < snapshot.size) index++; emit() }

@@ -42,6 +42,59 @@ class RateCoreTest {
         RateCore(lib, ratings) { db.locations().get(it)?.name }.also { it.refresh() }
     }
 
+    /** Alle Pfade der Warteschlange in Anzeige-Reihenfolge (durchblättern und zurück). */
+    private suspend fun RateCore.order(): List<String> {
+        val out = mutableListOf<String>()
+        while (state.value.current != null) { out += state.value.current!!.path; skip() }
+        repeat(out.size) { back() }
+        return out
+    }
+
+    @Test fun foldersListedInQueueOrderWithCounts() = runTest {
+        val c = core("Mai/a.jpg", "Mai/b.jpg", "Juni/c.jpg", "Juni/Urlaub/d.jpg", "Juni/Urlaub/e.jpg", "Juni/Urlaub/f.jpg")
+        val order = c.order()
+        val f = c.folders()
+        assertEquals(order.map { it.substringBeforeLast('/') }.distinct(), f.map { it.folder })
+        assertEquals(mapOf("Album/Mai" to 2, "Album/Juni" to 1, "Album/Juni/Urlaub" to 3), f.associate { it.folder to it.count })
+        assertEquals(order.first().substringBeforeLast('/'), f.single { it.current }.folder)
+        // Gemeinsamer Anfang nur „Album“: ein Teil bleibt zur Orientierung, also nichts gekürzt
+        assertEquals(mapOf("Album/Mai" to "Album/Mai", "Album/Juni" to "Album/Juni", "Album/Juni/Urlaub" to "Album/Juni/Urlaub"),
+            f.associate { it.folder to it.label })
+    }
+
+    @Test fun longCommonPathIsShortened() = runTest {
+        val id = db.locations().insert(location(name = "NAS", folders = listOf("Bilder")))
+        stores[id] = InMemoryStorage(mapOf("Bilder/Alle/Jan/2026/11/a.jpg" to byteArrayOf(1), "Bilder/Alle/Jan/2026/09/Urlaub/b.jpg" to byteArrayOf(1)))
+        val c = RateCore(LibraryRepository(db) { stores[it] }, RatingService(db, { stores[it] }) {}) { db.locations().get(it)?.name }
+        c.refresh()
+        assertEquals(setOf("…/2026/11", "…/2026/09/Urlaub"), c.folders().map { it.label }.toSet())
+    }
+
+    @Test fun jumpGoesToFirstUnratedOfFolderAndKeepsUndo() = runTest {
+        val c = core("Mai/a.jpg", "Mai/b.jpg", "Juni/c.jpg", "Juni/Urlaub/d.jpg", "Juni/Urlaub/e.jpg")
+        val order = c.order()
+        val target = order.last().substringBeforeLast('/')
+        val firstOfTarget = order.first { it.startsWith("$target/") }
+        c.rate(3)
+        c.jumpTo(c.folders().single { it.folder == target })
+        assertEquals(firstOfTarget, c.state.value.current!!.path)
+        assertTrue(c.state.value.canGoBack)
+        assertEquals(target, c.folders().single { it.current }.folder)
+        c.undo()
+        assertEquals(order.first(), c.state.value.current!!.path)
+    }
+
+    @Test fun jumpSkipsPhotosRatedInThisSession() = runTest {
+        val c = core("Mai/a.jpg", "Mai/b.jpg", "Juni/c.jpg")
+        val order = c.order()
+        val first = order.first().substringBeforeLast('/')
+        c.rate(4) // erstes Foto des ersten Ordners bewertet
+        c.jumpTo(c.folders().last())
+        c.jumpTo(c.folders().single { it.folder == first })
+        val expected = order.drop(1).firstOrNull { it.startsWith("$first/") } ?: order.first()
+        assertEquals(expected, c.state.value.current!!.path)
+    }
+
     @Test fun emptyQueueHasNullCurrent() = runTest {
         val c = core()
         assertNull(c.state.value.current)

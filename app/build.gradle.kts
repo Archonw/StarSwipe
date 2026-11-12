@@ -13,8 +13,8 @@ android {
         applicationId = "io.github.archonw.starswipe"
         minSdk = 26
         targetSdk = 35
-        versionCode = 19
-        versionName = "1.8.1"
+        versionCode = 20
+        versionName = "1.9.0"
     }
     // F-Droid: kein von Google verschlüsselter Abhängigkeits-Block im APK
     dependenciesInfo {

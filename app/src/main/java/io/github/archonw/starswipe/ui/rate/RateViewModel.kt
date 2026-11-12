@@ -52,6 +52,8 @@ class RateViewModel(private val c: AppContainer, only: Long? = null) : ViewModel
     fun setShowRated(on: Boolean) = viewModelScope.launch { core.setShowRated(on) }
     fun refresh() = c.scope.launch { core.refresh() }
     fun clearMessage() = core.clearMessage()
+    suspend fun folders(): List<FolderJump> = core.folders()
+    fun jumpTo(f: FolderJump) = viewModelScope.launch { core.jumpTo(f) }
 
     /** Bildquelle für ein Foto (kann IO brauchen, daher suspend). */
     suspend fun preview(p: PhotoEntity): PreviewSource? {
