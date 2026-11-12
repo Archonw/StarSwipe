@@ -1,0 +1,2 @@
+• Corregido: tras elegir carpetas nuevas, la lectura de las antiguas se detiene al momento; las fotos de carpetas desmarcadas desaparecen enseguida y solo se vuelve a leer la ubicación cambiada
+• Desactivar o quitar una ubicación también detiene su lectura

@@ -1,0 +1,2 @@
+• Fix: after choosing new folders, reading the old ones stops right away; photos from deselected folders disappear immediately and only the changed storage location is read again
+• Switching off or removing a storage location also stops its reading

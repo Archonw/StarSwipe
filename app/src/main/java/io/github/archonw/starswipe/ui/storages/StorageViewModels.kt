@@ -38,10 +38,14 @@ class StorageListViewModel(private val c: AppContainer) : ViewModel() {
     /** Speicherort, der gerade eingelesen wird (auch wenn das Einlesen woanders gestartet wurde). */
     val scanning = c.library.scanning
 
-    fun setEnabled(l: StorageLocationEntity, on: Boolean) = viewModelScope.launch { c.db.locations().update(l.copy(enabled = on)) }
+    fun setEnabled(l: StorageLocationEntity, on: Boolean) = viewModelScope.launch {
+        if (!on) c.library.stopScanOf(l.id)
+        c.db.locations().update(l.copy(enabled = on))
+    }
     fun setOneStar(l: StorageLocationEntity, on: Boolean) = viewModelScope.launch { c.db.locations().update(l.copy(oneStarIsUnrated = on)) }
 
     fun remove(l: StorageLocationEntity) = viewModelScope.launch {
+        c.library.stopScanOf(l.id)
         if (l.type == StorageType.NEXTCLOUD) runCatching {
             val cfg = StorageFactory.json.decodeFromString(NextcloudCfg.serializer(), l.config)
             val pw = c.secrets.get(StorageFactory.secretKey(l.id))
@@ -85,7 +89,7 @@ class AddStorageViewModel(private val c: AppContainer) : ViewModel() {
     fun saveLocal(uri: String, name: String) = viewModelScope.launch {
         val id = core.saveLocal(uri, form.value.name.ifBlank { name })
         saved.value = id to StorageType.LOCAL
-        c.scope.launch { c.library.refreshAll(rescan = true) }
+        c.scope.launch { c.library.refreshAll(only = id, rescan = true) }
     }
 }
 
@@ -118,8 +122,12 @@ class FolderPickerViewModel(private val c: AppContainer, private val id: Long) :
     fun toggle(path: String) { core?.toggle(path); selected.value = core?.selected ?: emptySet() }
 
     fun save() = viewModelScope.launch {
-        core?.save(current = dir.value)
-        c.scope.launch { c.library.refreshAll(rescan = true) }
+        core?.let { k ->
+            k.save(current = dir.value)
+            // Laufendes Einlesen mit alten Ordnern abbrechen, Abgewähltes sofort entfernen, dann nur diesen Speicherort neu einlesen.
+            c.library.foldersChanged(id)
+            c.scope.launch { c.library.refreshAll(only = id, rescan = true) }
+        }
         done.value = true
     }
 }

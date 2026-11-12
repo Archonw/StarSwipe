@@ -48,6 +48,7 @@ interface PhotoDao {
     @Query("DELETE FROM photos WHERE storageId = :storageId AND seen != :run") suspend fun deleteNotSeen(storageId: Long, run: Long)
     @Query("DELETE FROM photos WHERE storageId = :storageId AND path = :path") suspend fun delete(storageId: Long, path: String)
     @Query("DELETE FROM photos WHERE storageId = :storageId") suspend fun deleteByStorage(storageId: Long)
+    @Query("DELETE FROM photos WHERE storageId = :storageId AND path IN (:paths)") suspend fun deletePaths(storageId: Long, paths: List<String>)
     @Query("UPDATE photos SET sidecarBroken = 1 WHERE storageId = :storageId AND path = :path")
     suspend fun markBroken(storageId: Long, path: String)
     @Query("UPDATE photos SET rating = :rating WHERE storageId = :storageId AND path = :path")

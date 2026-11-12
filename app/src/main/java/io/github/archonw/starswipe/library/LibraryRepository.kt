@@ -6,6 +6,9 @@ import io.github.archonw.starswipe.storage.PhotoStorage
 import io.github.archonw.starswipe.storage.StorageException
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -83,23 +86,22 @@ class LibraryRepository(
             // Nur die noch leeren Speicherorte einlesen – große, schon eingelesene bleiben unberührt.
             if (only == null) return buildMap { for (id in missing) putAll(refreshAll(onBatch, onProgress, onFound, id)) }
         }
-        _active.update { it + 1 }
         val listener = Listener(onBatch, onProgress, onFound)
-        var run: Run? = null
+        var mine = false
+        // Erst anschließen bzw. einreihen, dann zählen: [active] > 0 heißt „hängt an einem Durchgang“.
+        val run = synchronized(runLock) {
+            val r = running
+            (if (!rescan && r != null && (r.only == null || r.only == only)) r
+            else waiting?.also { w -> if (w.only != only) w.only = null }
+                ?: Run(only).also { waiting = it; mine = true }).also { it.listeners += listener }
+        }
+        _active.update { it + 1 }
         try {
-            var mine = false
-            run = synchronized(runLock) {
-                val r = running
-                if (!rescan && r != null && (r.only == null || r.only == only)) r
-                else waiting?.also { w -> if (w.only != only) w.only = null }
-                    ?: Run(only).also { waiting = it; mine = true }
-            }
-            run.listeners += listener
             if (mine) execute(run)
             val result = run.result.await()
             return if (only == null) result else result.filterKeys { it == only }
         } finally {
-            run?.listeners?.remove(listener)
+            run.listeners.remove(listener)
             _active.update { it - 1 }
         }
     }
@@ -109,6 +111,27 @@ class LibraryRepository(
         val ids = inScope(only)
         val now = clock()
         return ids.isNotEmpty() && ids.all { id -> lastOk[id]?.let { now - it < maxAgeMs } == true }
+    }
+
+    /** Speicherort, der gerade eingelesen wird, mit seinem Einlese-Auftrag (zum gezielten Abbrechen). */
+    @Volatile private var current: Pair<Long, Job>? = null
+
+    /** Laufendes Einlesen dieses Speicherorts abbrechen (ausgeschaltet, entfernt, Ordner geändert); andere laufen weiter. */
+    fun stopScanOf(id: Long) {
+        lastOk.remove(id)
+        current?.takeIf { it.first == id }?.second?.cancel()
+    }
+
+    /**
+     * Ordnerauswahl wurde gespeichert: laufendes Einlesen dieses Speicherorts abbrechen und Fotos außerhalb
+     * der neuen Ordner sofort entfernen. Danach `refreshAll(only = id, rescan = true)` aufrufen.
+     */
+    suspend fun foldersChanged(id: Long) {
+        stopScanOf(id)
+        val folders = db.locations().get(id)?.folders?.map { it.trim('/') } ?: return
+        if ("" in folders) return // Wurzel gewählt: alles bleibt
+        val outside = db.photos().byStorage(id).map { it.path }.filter { p -> folders.none { f -> p.startsWith("$f/") } }
+        outside.chunked(500).forEach { db.photos().deletePaths(id, it) }
     }
 
     private suspend fun inScope(only: Long?): List<Long> =
@@ -141,7 +164,9 @@ class LibraryRepository(
             val failures = mutableMapOf<Long, StorageException>()
             var before = 0
             var foundBefore = 0
-            for (loc in db.locations().all().filter { it.enabled && (only == null || it.id == only) }) {
+            for (id in inScope(only)) {
+                // Erst jetzt lesen: Ordner können sich geändert haben, während andere Speicherorte dran waren.
+                val loc = db.locations().get(id)?.takeIf { it.enabled } ?: continue
                 if (loc.folders.isEmpty()) {
                     failures[loc.id] = StorageException.NoFolders(); continue
                 }
@@ -152,12 +177,20 @@ class LibraryRepository(
                 try {
                     var last = 0
                     var lastFound = 0
-                    try {
-                        scanner.scan(loc, s, { pendingPaths(loc.id) }, onBatch,
-                            onProgress = { n -> last = n; _scanning.value = ScanStatus(loc.id, lastFound, n); onProgress(before + n) },
-                            onFound = { n -> lastFound = n; _scanning.value = ScanStatus(loc.id, n, last); onFound(foundBefore + n) })
-                        lastOk[loc.id] = clock()
-                    } finally { before += last; foundBefore += lastFound }
+                    val stopped = try {
+                        coroutineScope {
+                            val job = launch {
+                                scanner.scan(loc, s, { pendingPaths(loc.id) }, onBatch,
+                                    onProgress = { n -> last = n; _scanning.value = ScanStatus(loc.id, lastFound, n); onProgress(before + n) },
+                                    onFound = { n -> lastFound = n; _scanning.value = ScanStatus(loc.id, n, last); onFound(foundBefore + n) })
+                            }
+                            current = loc.id to job
+                            job.join()
+                            job.isCancelled
+                        }
+                    } finally { current = null; before += last; foundBefore += lastFound }
+                    // Gestoppt (Ordner geändert, ausgeschaltet, entfernt): kein Fehler, der Folge-Durchgang übernimmt.
+                    if (!stopped) lastOk[loc.id] = clock()
                 } catch (e: CancellationException) {
                     throw e
                 } catch (e: StorageException) {

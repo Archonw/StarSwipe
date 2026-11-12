@@ -1,0 +1,2 @@
+• Behoben: Nach dem Wählen neuer Ordner stoppt das Einlesen der alten sofort; Fotos aus abgewählten Ordnern verschwinden gleich, und nur der geänderte Speicherort wird neu eingelesen
+• Ausschalten oder Entfernen eines Speicherorts stoppt ebenfalls dessen Einlesen

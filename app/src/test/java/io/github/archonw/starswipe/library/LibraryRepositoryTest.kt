@@ -162,6 +162,60 @@ class LibraryRepositoryTest {
         assertEquals(2, db.photos().byStorage(a).size + db.photos().byStorage(b).size)
     }
 
+    /** Ordner während des Einlesens neu gewählt: alter Durchgang bricht für diesen Speicherort ab, neuer nimmt die neuen Ordner. */
+    @Test fun folderChangeDuringScanRestartsWithNewFolders() = runBlocking {
+        val id = db.locations().insert(location(folders = listOf("Alt")))
+        val mem = InMemoryStorage(mapOf("Alt/a.jpg" to byteArrayOf(1), "Alt/b.jpg" to byteArrayOf(1), "Neu/n.jpg" to byteArrayOf(1)))
+        val oldGate = kotlinx.coroutines.CompletableDeferred<Unit>() // nie freigegeben: altes Einlesen hängt
+        val store = object : PhotoStorage by mem {
+            override suspend fun list(dir: String): List<Entry> { if (dir == "Alt") oldGate.await(); return mem.list(dir) }
+        }
+        val repo = LibraryRepository(db) { if (it == id) store else null }
+        db.photos().upsert(listOf(io.github.archonw.starswipe.db.photo(id, "Alt/a.jpg", 1)))
+        val first = async(Dispatchers.Default) { repo.refreshAll() }
+        repo.scanning.first { it?.storageId == id }
+        db.locations().update(db.locations().get(id)!!.copy(folders = listOf("Neu")))
+        repo.foldersChanged(id)
+        assertEquals(0, db.photos().byStorage(id).size) // Altes sofort weg
+        val second = async(Dispatchers.Default) { repo.refreshAll(only = id, rescan = true) }
+        kotlinx.coroutines.withTimeout(5_000) { listOf(first, second).awaitAll() }
+        assertEquals(emptyMap<Long, StorageException>(), first.await())
+        assertEquals(listOf("Neu/n.jpg"), db.photos().byStorage(id).map { it.path })
+    }
+
+    /** Abbruch eines Speicherorts lässt die übrigen eines gemeinsamen Durchgangs weiterlaufen. */
+    @Test fun stoppingOneLocationKeepsOthers() = runBlocking {
+        val a = db.locations().insert(location(name = "A"))
+        val b = db.locations().insert(location(name = "B"))
+        val never = kotlinx.coroutines.CompletableDeferred<Unit>()
+        val ma = InMemoryStorage(mapOf("Album/a.jpg" to byteArrayOf(1)))
+        val sa = object : PhotoStorage by ma { override suspend fun list(dir: String): List<Entry> { never.await(); return ma.list(dir) } }
+        val sb = InMemoryStorage(mapOf("Album/b.jpg" to byteArrayOf(1)))
+        val repo = LibraryRepository(db) { mapOf(a to sa, b to sb)[it] }
+        val run = async(Dispatchers.Default) { repo.refreshAll() }
+        repo.scanning.first { it?.storageId == a }
+        repo.stopScanOf(a)
+        kotlinx.coroutines.withTimeout(5_000) { run.await() }
+        assertEquals(1, db.photos().byStorage(b).size)
+    }
+
+    /** Ein gemeinsamer Durchgang liest die Ordner eines Speicherorts erst, wenn dieser dran ist. */
+    @Test fun laterLocationUsesCurrentFolders() = runBlocking {
+        val a = db.locations().insert(location(name = "A"))
+        val b = db.locations().insert(location(name = "B", folders = listOf("Alt")))
+        val gate = kotlinx.coroutines.CompletableDeferred<Unit>()
+        val ma = InMemoryStorage(mapOf("Album/a.jpg" to byteArrayOf(1)))
+        val sa = object : PhotoStorage by ma { override suspend fun list(dir: String): List<Entry> { gate.await(); return ma.list(dir) } }
+        val sb = InMemoryStorage(mapOf("Alt/x.jpg" to byteArrayOf(1), "Neu/y.jpg" to byteArrayOf(1)))
+        val repo = LibraryRepository(db) { mapOf(a to sa, b to sb)[it] }
+        val run = async(Dispatchers.Default) { repo.refreshAll() }
+        repo.scanning.first { it?.storageId == a }
+        db.locations().update(db.locations().get(b)!!.copy(folders = listOf("Neu")))
+        gate.complete(Unit)
+        run.await()
+        assertEquals(listOf("Neu/y.jpg"), db.photos().byStorage(b).map { it.path })
+    }
+
     /** Solange ein Einlesen läuft oder wartet, ist [LibraryRepository.active] > 0 (hält den Vordergrund-Dienst am Leben). */
     @Test fun activeCountsRunningAndWaitingScans() = runBlocking {
         val id = db.locations().insert(location())
